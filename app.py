@@ -174,7 +174,7 @@ if uploaded_file:
         pilih_kategori = st.sidebar.multiselect("🏷️ Pilih Kategori:", list_kategori)
         
         # Limit Baris untuk Preview
-        limit = st.sidebar.number_input("🔢 Preview Berapa Baris?", min_value=1, value=50)
+        limit = st.sidebar.number_input("🔢 Preview & Download Berapa Baris?", min_value=1, value=50)
         
         # --- PROSES FILTER ---
         df_export = df_hasil.copy()
@@ -184,20 +184,25 @@ if uploaded_file:
         if pilih_kategori:
             df_export = df_export[df_export['Kategori_Jasa'].isin(pilih_kategori)]
         
+        # --- LIMIT DATA ---
+        # Terapkan limit untuk Tampilan DAN Download
+        df_limited = df_export.head(limit)
+
         # --- TAMPILAN HASIL ---
-        st.subheader(f"📋 Hasil Filter: {len(df_export)} Data Terpilih")
+        st.subheader(f"📋 Hasil Filter (Menampilkan {len(df_limited)} data)")
         
         # Tampilkan Dataframe (Preview)
-        st.dataframe(df_export.head(limit), use_container_width=True)
+        st.dataframe(df_limited, use_container_width=True)
+        
         if len(df_export) > limit:
-            st.caption(f"*Menampilkan {limit} baris pertama dari {len(df_export)} data hasil filter.*")
+            st.caption(f"*Catatan: Total hasil filter sebenarnya ada {len(df_export)} baris. Yang ditampilkan & didownload dibatasi {limit} baris.*")
 
         # --- DOWNLOAD BUTTON (FORMAT CSV) ---
-        # Mengubah DataFrame menjadi format CSV (String)
-        csv_data = df_export.to_csv(index=False).encode('utf-8')
+        # Mengubah DataFrame yang sudah dilimit (df_limited) menjadi CSV
+        csv_data = df_limited.to_csv(index=False).encode('utf-8')
         
         st.download_button(
-            label="📥 Download Semua Hasil Filter (CSV)",
+            label=f"📥 Download {len(df_limited)} Data Terpilih (CSV)",
             data=csv_data,
             file_name="Data_Arsitek_Terfilter.csv",
             mime="text/csv",
