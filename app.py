@@ -1,16 +1,15 @@
 import streamlit as st
 import pandas as pd
-import io
+import math # Import math untuk pembulatan ke atas
 
 # --- KONFIGURASI HALAMAN ---
-st.set_page_config(page_title="Aplikasi Filter Data Arsitek (Title Only)", layout="wide", page_icon="🏗️")
+st.set_page_config(page_title="Aplikasi Split Data Arsitek (Batch Download)", layout="wide", page_icon="🏗️")
 
 # =============================================================================
 # 1. DATABASE KOTA (DATABASE ULTIMATE)
 # =============================================================================
-# Database ini mencakup Kota Besar, Kabupaten, hingga daerah spesifik di data Anda.
 DATABASE_KOTA = [
-    # --- DAERAH KHUSUS & UNIK (Ditemukan di pola data Anda) ---
+    # --- DAERAH KHUSUS & UNIK ---
     "Kuala Kencana", "Rengasdengklok", "Baturaden", "Rantau Prapat", "Rantauprapat",
     "Ujung Batu", "Bagan Batu", "Pasir Pengaraian", "Pangkalan Kerinci",
     "Ampana", "Woha", "Mandalika", "Cipatat", "Kroya", "Wates", "Bangil", 
@@ -76,26 +75,22 @@ DATABASE_KOTA = [
     "Tomohon", "Bitung", "Bima"
 ]
 
-# Urutkan dari nama terpanjang ke terpendek agar 'Jakarta Selatan' terdeteksi sebelum 'Jakarta'
 DATABASE_SORTED = sorted(DATABASE_KOTA, key=len, reverse=True)
 
 # =============================================================================
-# 2. FUNGSI LOAD DATA ANTI-ERROR (ROBUST LOADER)
+# 2. FUNGSI LOAD DATA ANTI-ERROR
 # =============================================================================
 @st.cache_data
 def load_data_robust(file):
-    # Coba baca normal (koma)
     try:
         return pd.read_csv(file)
     except:
         pass
-    # Coba baca format titik koma (Excel Indo)
     try:
         file.seek(0)
         return pd.read_csv(file, sep=';')
     except:
         pass
-    # Coba baca paksa (Python engine)
     try:
         file.seek(0)
         return pd.read_csv(file, sep=None, engine='python', on_bad_lines='skip')
@@ -107,13 +102,9 @@ def load_data_robust(file):
 # =============================================================================
 @st.cache_data
 def scan_data(df):
-    # Ambil kolom pertama (biasanya Title)
     col_name = 'Title' if 'Title' in df.columns else df.columns[0]
-    
-    # Pastikan data string
     df[col_name] = df[col_name].astype(str)
     
-    # --- LOGIKA DETEKSI KOTA ---
     def get_city(text):
         t = str(text).lower()
         for kota in DATABASE_SORTED:
@@ -121,7 +112,6 @@ def scan_data(df):
                 return kota 
         return "Tidak Terdeteksi"
     
-    # --- LOGIKA DETEKSI KATEGORI ---
     def get_category(text):
         t = str(text).lower()
         if 'masjid' in t or 'musholla' in t: return "🕌 Proyek Masjid"
@@ -140,41 +130,35 @@ def scan_data(df):
 # =============================================================================
 # 4. TAMPILAN APLIKASI (USER INTERFACE)
 # =============================================================================
-st.title("Aplikasi Sortir Data Arsitek (Database Lengkap)")
-st.markdown("Upload file CSV Anda. Aplikasi akan membaca **seluruh baris data** dan mendeteksi lokasinya.")
+st.title("Aplikasi Split Data Arsitek (Batch System)")
+st.markdown("""
+Aplikasi ini akan memfilter data, lalu **memecahnya menjadi beberapa bagian (batch)**.
+Anda bisa memilih batch mana yang ingin didownload secara berurutan agar data tidak terduplikasi.
+""")
 
 uploaded_file = st.file_uploader("Upload File CSV di sini", type=["csv"])
 
 if uploaded_file:
-    # Load Data dengan metode Anti-Error
     df_raw = load_data_robust(uploaded_file)
     
     if df_raw is not None:
-        # Hitung Jumlah Baris Asli
         total_baris = len(df_raw)
+        st.info(f"📂 File terbaca. Total Data Awal: **{total_baris} baris**.")
         
-        # Tampilkan Info Jumlah Data di Awal
-        st.info(f"📂 File berhasil dibaca! Total Data ditemukan: **{total_baris} baris**.")
-        
-        with st.spinner(f'Sedang memproses deteksi kota untuk {total_baris} data...'):
+        with st.spinner('Sedang memproses data...'):
             df_hasil = scan_data(df_raw)
         
-        st.success("✅ Deteksi Selesai!")
+        st.success("✅ Proses Scan Selesai!")
         st.divider()
         
-        # --- SIDEBAR MENU ---
-        st.sidebar.header("🎛️ Menu Filter")
+        # --- SIDEBAR MENU (FILTER) ---
+        st.sidebar.header("🎛️ Filter Data")
         
-        # Pilihan Kota (Sortir A-Z)
         list_kota = sorted(df_hasil[df_hasil['Kota_Terdeteksi'] != "Tidak Terdeteksi"]['Kota_Terdeteksi'].unique())
         pilih_kota = st.sidebar.multiselect("📍 Pilih Kota:", list_kota)
         
-        # Pilihan Kategori
         list_kategori = sorted(df_hasil['Kategori_Jasa'].unique())
         pilih_kategori = st.sidebar.multiselect("🏷️ Pilih Kategori:", list_kategori)
-        
-        # Limit Baris untuk Preview
-        limit = st.sidebar.number_input("🔢 Preview & Download Berapa Baris?", min_value=1, value=50)
         
         # --- PROSES FILTER ---
         df_export = df_hasil.copy()
@@ -183,39 +167,67 @@ if uploaded_file:
             df_export = df_export[df_export['Kota_Terdeteksi'].isin(pilih_kota)]
         if pilih_kategori:
             df_export = df_export[df_export['Kategori_Jasa'].isin(pilih_kategori)]
+            
+        total_filtered = len(df_export)
         
-        # --- LIMIT DATA ---
-        # Terapkan limit untuk Tampilan DAN Download
-        df_limited = df_export.head(limit)
-
-        # --- MEMILIH HANYA KOLOM TITLE ---
-        # Kita ambil nama kolom 'Title' atau kolom pertama yang asli
-        col_name_asli = 'Title' if 'Title' in df_limited.columns else df_limited.columns[0]
+        # --- PENGATURAN BATCH / PEMBAGIAN DATA ---
+        st.subheader(f"📊 Total Hasil Filter: {total_filtered} Data")
         
-        # Buat dataframe baru yang HANYA berisi kolom Title
-        df_final_show = df_limited[[col_name_asli]]
-
-        # --- TAMPILAN HASIL ---
-        st.subheader(f"📋 Hasil Filter (Menampilkan {len(df_final_show)} data)")
-        st.caption("Menampilkan kolom **Title** saja.")
-        
-        # Tampilkan Dataframe (Hanya Title)
-        st.dataframe(df_final_show, use_container_width=True)
-        
-        if len(df_export) > limit:
-            st.caption(f"*Catatan: Total hasil filter sebenarnya ada {len(df_export)} baris. Yang ditampilkan & didownload dibatasi {limit} baris.*")
-
-        # --- DOWNLOAD BUTTON (FORMAT CSV - HANYA TITLE) ---
-        # Mengubah DataFrame yang sudah bersih (Hanya Title) menjadi CSV
-        csv_data = df_final_show.to_csv(index=False).encode('utf-8')
-        
-        st.download_button(
-            label=f"📥 Download {len(df_final_show)} Data (Hanya Title)",
-            data=csv_data,
-            file_name="Data_Arsitek_Title_Only.csv",
-            mime="text/csv",
-            type="primary"
-        )
+        if total_filtered > 0:
+            st.markdown("### ✂️ Pengaturan Pembagian Data")
+            
+            # Input untuk menentukan berapa baris per file
+            batch_size = st.number_input("Ingin berapa baris data per file download?", min_value=1, value=50, step=10)
+            
+            # Hitung jumlah batch
+            num_batches = math.ceil(total_filtered / batch_size)
+            
+            st.info(f"Data akan dibagi menjadi **{num_batches} bagian (batch)**. Silakan download berurutan di bawah ini.")
+            
+            st.markdown("---")
+            st.subheader("📥 Download Area")
+            
+            # Identifikasi kolom Title yang asli
+            col_name_asli = 'Title' if 'Title' in df_export.columns else df_export.columns[0]
+            
+            # --- LOOP MEMBUAT TOMBOL DOWNLOAD ---
+            # Kita buat container agar rapi
+            cols = st.columns(1) # Bisa diganti st.columns(3) jika ingin berjejer kesamping
+            
+            for i in range(num_batches):
+                # Tentukan index awal dan akhir untuk batch ini
+                start_idx = i * batch_size
+                end_idx = min((i + 1) * batch_size, total_filtered)
+                
+                # Slice data (Potong data sesuai urutan)
+                df_batch = df_export.iloc[start_idx:end_idx]
+                
+                # Hanya ambil kolom Title
+                df_final_download = df_batch[[col_name_asli]]
+                
+                # Konversi ke CSV
+                csv_data = df_final_download.to_csv(index=False).encode('utf-8')
+                
+                # Buat nama file yang unik dan informatif
+                file_label = f"Batch {i+1} (Data baris {start_idx+1} - {end_idx})"
+                file_name_download = f"Data_Arsitek_Batch_{i+1}_{start_idx+1}_to_{end_idx}.csv"
+                
+                # Tampilkan Tombol
+                with st.expander(f"📦 **{file_label}** - Klik untuk buka"):
+                    st.write(f"Berisi {len(df_final_download)} data title.")
+                    st.dataframe(df_final_download.head(3), use_container_width=True) # Preview kecil
+                    st.caption("... (preview 3 data teratas)")
+                    
+                    st.download_button(
+                        label=f"⬇️ Download {file_label}",
+                        data=csv_data,
+                        file_name=file_name_download,
+                        mime="text/csv",
+                        type="primary",
+                        key=f"btn_{i}" # Key unik agar tombol tidak bentrok
+                    )
+        else:
+            st.warning("⚠️ Tidak ada data yang ditemukan dengan filter tersebut.")
             
     else:
-        st.error("⚠️ Gagal membaca file. Pastikan file CSV tidak rusak.")
+        st.error("⚠️ Gagal membaca file CSV.")
