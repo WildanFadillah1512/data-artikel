@@ -3,7 +3,7 @@ import pandas as pd
 import io
 
 # --- KONFIGURASI HALAMAN ---
-st.set_page_config(page_title="Aplikasi Filter Data Arsitek (Final CSV)", layout="wide", page_icon="🏗️")
+st.set_page_config(page_title="Aplikasi Filter Data Arsitek (Title Only)", layout="wide", page_icon="🏗️")
 
 # =============================================================================
 # 1. DATABASE KOTA (DATABASE ULTIMATE)
@@ -188,23 +188,31 @@ if uploaded_file:
         # Terapkan limit untuk Tampilan DAN Download
         df_limited = df_export.head(limit)
 
-        # --- TAMPILAN HASIL ---
-        st.subheader(f"📋 Hasil Filter (Menampilkan {len(df_limited)} data)")
+        # --- MEMILIH HANYA KOLOM TITLE ---
+        # Kita ambil nama kolom 'Title' atau kolom pertama yang asli
+        col_name_asli = 'Title' if 'Title' in df_limited.columns else df_limited.columns[0]
         
-        # Tampilkan Dataframe (Preview)
-        st.dataframe(df_limited, use_container_width=True)
+        # Buat dataframe baru yang HANYA berisi kolom Title
+        df_final_show = df_limited[[col_name_asli]]
+
+        # --- TAMPILAN HASIL ---
+        st.subheader(f"📋 Hasil Filter (Menampilkan {len(df_final_show)} data)")
+        st.caption("Menampilkan kolom **Title** saja.")
+        
+        # Tampilkan Dataframe (Hanya Title)
+        st.dataframe(df_final_show, use_container_width=True)
         
         if len(df_export) > limit:
             st.caption(f"*Catatan: Total hasil filter sebenarnya ada {len(df_export)} baris. Yang ditampilkan & didownload dibatasi {limit} baris.*")
 
-        # --- DOWNLOAD BUTTON (FORMAT CSV) ---
-        # Mengubah DataFrame yang sudah dilimit (df_limited) menjadi CSV
-        csv_data = df_limited.to_csv(index=False).encode('utf-8')
+        # --- DOWNLOAD BUTTON (FORMAT CSV - HANYA TITLE) ---
+        # Mengubah DataFrame yang sudah bersih (Hanya Title) menjadi CSV
+        csv_data = df_final_show.to_csv(index=False).encode('utf-8')
         
         st.download_button(
-            label=f"📥 Download {len(df_limited)} Data Terpilih (CSV)",
+            label=f"📥 Download {len(df_final_show)} Data (Hanya Title)",
             data=csv_data,
-            file_name="Data_Arsitek_Terfilter.csv",
+            file_name="Data_Arsitek_Title_Only.csv",
             mime="text/csv",
             type="primary"
         )
