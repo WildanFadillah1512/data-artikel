@@ -3,95 +3,99 @@ import pandas as pd
 import io
 
 # --- KONFIGURASI HALAMAN ---
-st.set_page_config(page_title="Aplikasi Filter Data Arsitek", layout="wide", page_icon="🏗️")
+st.set_page_config(page_title="Aplikasi Filter Data Arsitek (Final)", layout="wide", page_icon="🏗️")
 
 # =============================================================================
-# 1. DATABASE KOTA (Daftar Lengkap Seluruh Indonesia & Area SEO)
+# 1. DATABASE KOTA (DATABASE ULTIMATE)
 # =============================================================================
+# Database ini mencakup Kota Besar, Kabupaten, hingga daerah spesifik di data Anda.
 DATABASE_KOTA = [
-    # --- KAWASAN KHUSUS (SEO) ---
+    # --- DAERAH KHUSUS & UNIK (Ditemukan di pola data Anda) ---
+    "Kuala Kencana", "Rengasdengklok", "Baturaden", "Rantau Prapat", "Rantauprapat",
+    "Ujung Batu", "Bagan Batu", "Pasir Pengaraian", "Pangkalan Kerinci",
+    "Ampana", "Woha", "Mandalika", "Cipatat", "Kroya", "Wates", "Bangil", 
+    "Cepu", "Ungaran", "Ambarawa", "Majenang", "Gombong", "Karanganyar",
+    "Painan", "Sipirok", "Sidempuan", "Padang Sidempuan", "Sibuhuan",
+    "Gunung Tua", "Panyabungan", "Kotanopan", "Barus", "Pandan", 
+    "Tarutung", "Balige", "Dolok Sanggul", "Pangururan", "Sidikalang",
+    "Kabanjahe", "Berastagi", "Stabat", "Tanjung Morawa", "Lubuk Pakam",
+    "Perbaungan", "Sei Rampah", "Indrapura", "Lima Puluh", "Kisaran",
+    "Aek Kanopan", "Kota Pinang", "Gunung Sitoli", "Gunungsitoli",
+    "Teluk Dalam", "Lahomi", "Lotu", "Tuhemberua", "Gido", 
+    "Sidenreng Rappang", "Pangkajene", "Watansoppeng", "Belopa", "Malili",
+    "Masamba", "Makale", "Rantepao", "Benteng", "Bulukumba", "Bantaeng",
+    "Jeneponto", "Takalar", "Sungguminasa", "Maros", "Pangkep", "Barru",
+    "Pinrang", "Enrekang", "Parepare", "Palopo", "Watampone", "Sengkang",
+    "Kuala Tungkal", "Muara Bulian", "Muara Bungo", "Bangko", "Sarolangun",
+    
+    # --- PAPUA & MALUKU ---
+    "Intan Jaya", "Dogiyai", "Deiyai", "Paniai", "Nabire", "Puncak Jaya", 
+    "Puncak", "Lanny Jaya", "Tolikara", "Mamberamo", "Yalimo", "Jayawijaya", 
+    "Wamena", "Nduga", "Yahukimo", "Pegunungan Bintang", "Boven Digoel", 
+    "Mappi", "Asmat", "Mimika", "Timika", "Sarmi", "Keerom", "Waropen", 
+    "Kepulauan Yapen", "Biak", "Numfor", "Supiori", "Mamberamo Raya", 
+    "Jayapura", "Sentani", "Merauke", "Sorong", "Manokwari", "Fakfak", 
+    "Kaimana", "Teluk Bintuni", "Teluk Wondama", "Raja Ampat", "Tambrauw", 
+    "Maybrat", "Sorong Selatan", "Tual", "Maluku", "Ambon", "Ternate", "Tidore",
+
+    # --- KAWASAN SEO (JABODETABEK & SEKITARNYA) ---
     "Jabodetabek", "Bintaro", "BSD", "BSD City", "Cibubur", "Kelapa Gading", 
     "Pantai Indah Kapuk", "PIK", "Sentul", "Cileungsi", "Cikarang", "Karawang", 
     "Cikampek", "Jababeka", "Meikarta", "Harapan Indah", "Summarecon", "Alam Sutera",
     "Gading Serpong", "Lippo Karawaci", "Citra Raya", "Kota Baru Parahyangan",
-    
+    "Jakarta", "Bogor", "Depok", "Tangerang", "Bekasi", "Bandung", "Cimahi",
+    "Cianjur", "Sukabumi", "Tasikmalaya", "Ciamis", "Garut", "Cirebon", "Kuningan",
+    "Indramayu", "Majalengka", "Subang", "Purwakarta", "Sumedang", "Banjar",
+    "Pangandaran", "Serang", "Cilegon", "Pandeglang", "Lebak", 
+
+    # --- JAWA TENGAH & TIMUR ---
+    "Semarang", "Yogyakarta", "Jogja", "Solo", "Surakarta", "Malang", "Batu",
+    "Surabaya", "Sidoarjo", "Gresik", "Lamongan", "Tuban", "Bojonegoro", "Ngawi", 
+    "Madiun", "Magetan", "Ponorogo", "Pacitan", "Trenggalek", "Tulungagung", "Blitar",
+    "Kediri", "Pare", "Nganjuk", "Jombang", "Mojokerto", "Pasuruan", "Probolinggo",
+    "Lumajang", "Jember", "Bondowoso", "Situbondo", "Banyuwangi", "Bangkalan",
+    "Sampang", "Pamekasan", "Sumenep", "Madura", "Pekalongan", "Tegal", "Brebes", 
+    "Pemalang", "Batang", "Kendal", "Demak", "Grobogan", "Purwodadi", "Blora", 
+    "Rembang", "Pati", "Kudus", "Jepara", "Temanggung", "Wonosobo", "Purworejo", 
+    "Kebumen", "Cilacap", "Purwokerto", "Banyumas", "Banjarnegara", "Purbalingga", 
+    "Klaten", "Boyolali", "Sragen", "Sukoharjo", "Wonogiri", "Sleman", "Bantul", 
+    "Gunung Kidul", "Kulon Progo",
+
     # --- SUMATERA ---
-    "Banda Aceh", "Sabang", "Lhokseumawe", "Langsa", "Subulussalam", "Meulaboh", "Aceh",
-    "Medan", "Binjai", "Pematang Siantar", "Tebing Tinggi", "Sibolga", "Tanjungbalai", 
-    "Gunungsitoli", "Padang Sidempuan", "Deli Serdang", "Karo", "Nias", "Samosir",
-    "Padang", "Bukittinggi", "Pariaman", "Padang Panjang", "Payakumbuh", "Solok", "Sawahlunto",
-    "Pekanbaru", "Dumai", "Riau", "Bengkalis", "Indragiri", "Kampar", "Kuantan Singingi", "Pelalawan", "Rokan", "Siak",
-    "Jambi", "Sungai Penuh", "Kerinci", "Merangin", "Batanghari", "Muaro Jambi",
-    "Palembang", "Prabumulih", "Lubuklinggau", "Pagar Alam", "Banyuasin", "Empat Lawang", "Lahat", "Muara Enim", "Musi", "Ogan",
-    "Bengkulu", "Muko-Muko", "Rejang Lebong", "Kaur",
-    "Bandar Lampung", "Metro", "Lampung", "Pringsewu", "Tanggamus", "Way Kanan",
-    "Pangkal Pinang", "Bangka", "Belitung", "Tanjung Pandan", "Muntok", "Sungailiat",
-    "Batam", "Tanjung Pinang", "Bintan", "Karimun", "Natuna", "Lingga", "Anambas",
+    "Banda Aceh", "Medan", "Padang", "Pekanbaru", "Jambi", "Palembang", "Bengkulu",
+    "Bandar Lampung", "Pangkal Pinang", "Tanjung Pinang", "Batam", "Lhokseumawe",
+    "Langsa", "Binjai", "Tebing Tinggi", "Pematang Siantar", "Sibolga", "Dumai",
+    "Prabumulih", "Lubuklinggau", "Pagar Alam", "Metro", "Subulussalam", "Sabang",
+    "Sungaipenuh", "Sungai Penuh", "Solok", "Sawahlunto", "Pariaman", "Payakumbuh",
+    "Bukittinggi", "Padang Panjang",
 
-    # --- JAWA ---
-    "Jakarta", "Jakarta Pusat", "Jakarta Utara", "Jakarta Barat", "Jakarta Selatan", "Jakarta Timur", "Kepulauan Seribu",
-    "Bogor", "Sukabumi", "Cianjur", "Bandung", "Garut", "Tasikmalaya", "Ciamis", "Kuningan", "Cirebon", "Majalengka", 
-    "Sumedang", "Indramayu", "Subang", "Purwakarta", "Karawang", "Bekasi", "Bandung Barat", "Pangandaran", "Depok", "Cimahi", "Banjar",
-    "Semarang", "Salatiga", "Solo", "Surakarta", "Magelang", "Pekalongan", "Tegal", "Brebes", "Pemalang", "Batang", "Kendal", "Demak", 
-    "Grobogan", "Purwodadi", "Blora", "Rembang", "Pati", "Kudus", "Jepara", "Temanggung", "Wonosobo", "Purworejo", "Kebumen", 
-    "Cilacap", "Purwokerto", "Banyumas", "Banjarnegara", "Purbalingga", "Klaten", "Boyolali", "Sragen", "Sukoharjo", "Wonogiri", "Karanganyar",
-    "Yogyakarta", "Jogja", "Bantul", "Sleman", "Gunung Kidul", "Kulon Progo",
-    "Surabaya", "Sidoarjo", "Gresik", "Lamongan", "Tuban", "Bojonegoro", "Ngawi", "Madiun", "Magetan", "Ponorogo", "Pacitan", 
-    "Trenggalek", "Tulungagung", "Blitar", "Kediri", "Pare", "Nganjuk", "Jombang", "Mojokerto", "Malang", "Batu", "Pasuruan", 
-    "Probolinggo", "Lumajang", "Jember", "Bondowoso", "Situbondo", "Banyuwangi", "Bangkalan", "Sampang", "Pamekasan", "Sumenep", "Madura",
-    "Serang", "Cilegon", "Tangerang", "Tangsel", "Tangerang Selatan", "Pandeglang", "Lebak",
-
-    # --- BALI & NUSA TENGGARA ---
-    "Denpasar", "Badung", "Kuta", "Gianyar", "Ubud", "Tabanan", "Buleleng", "Singaraja", "Jembrana", "Karangasem", "Klungkung", "Bangli", "Bali",
-    "Mataram", "Bima", "Lombok", "Sumbawa", "Dompu", "Selong", "Praya",
-    "Kupang", "Flores", "Sumba", "Alor", "Belu", "Ende", "Manggarai", "Labuan Bajo", "Rote", "Sikka", "Maumere", "Timor Tengah",
-
-    # --- KALIMANTAN ---
-    "Pontianak", "Singkawang", "Sambas", "Mempawah", "Sanggau", "Ketapang", "Sintang", "Kapuas Hulu", "Bengkayang", "Landak", "Sekadau", "Melawi", "Kayong", "Kubu Raya",
-    "Palangkaraya", "Kotawaringin", "Sampit", "Pangkalan Bun", "Kapuas", "Barito", "Lamandau", "Seruyan", "Sukamara", "Gunung Mas", "Pulang Pisau", "Murung Raya",
-    "Banjarmasin", "Banjarbaru", "Banjar", "Barito", "Tapin", "Hulu Sungai", "Tabalong", "Tanah Laut", "Tanah Bumbu", "Kotabaru", "Balangan",
-    "Samarinda", "Balikpapan", "Bontang", "Kutai", "Tenggarong", "Sangatta", "Berau", "Pajam", "Mahakam",
-    "Tarakan", "Bulungan", "Tanjung Selor", "Malinau", "Nunukan", "Tana Tidung", "IKN",
-
-    # --- SULAWESI ---
-    "Makassar", "Parepare", "Palopo", "Gowa", "Maros", "Bone", "Bulukumba", "Jeneponto", "Takalar", "Bantaeng", "Sinjai", "Soppeng", "Wajo", "Sidrap", "Pinrang", "Enrekang", "Luwu", "Toraja", "Selayar",
-    "Manado", "Bitung", "Tomohon", "Kotamobagu", "Minahasa", "Bolaang Mongondow", "Sangihe", "Talaud",
-    "Palu", "Donggala", "Poso", "Luwuk", "Banggai", "Buol", "Toli-Toli", "Morowali", "Parigi Moutong", "Tojo Una-Una", "Sigi",
-    "Kendari", "Baubau", "Kolaka", "Konawe", "Muna", "Buton", "Wakatobi", "Bombana",
-    "Gorontalo", "Boalemo", "Pohuwato",
-    "Mamuju", "Majene", "Polewali Mandar", "Mamasa", "Pasangkayu",
-
-    # --- MALUKU & PAPUA ---
-    "Ambon", "Tual", "Maluku", "Buru", "Seram", "Aru", "Saumlaki", "Langgur",
-    "Ternate", "Tidore", "Halmahera", "Morotai", "Sula",
-    "Jayapura", "Sentani", "Sarmi", "Keerom", "Biak", "Yapen", "Nabire", "Mimika", "Timika", "Puncak Jaya", "Paniai", "Dogiyai", "Intan Jaya", "Deiyai",
-    "Sorong", "Raja Ampat", "Manokwari", "Fakfak", "Kaimana", "Teluk Bintuni", "Teluk Wondama",
-    "Merauke", "Boven Digoel", "Mappi", "Asmat", "Wamena", "Jayawijaya", "Yahukimo", "Pegunungan Bintang", "Tolikara", "Nduga", "Lanny Jaya", "Mamberamo", "Yalimo"
+    # --- KALIMANTAN, SULAWESI, BALI, NTB, NTT ---
+    "Pontianak", "Palangkaraya", "Banjarmasin", "Samarinda", "Tanjung Selor", "Manado", 
+    "Palu", "Makassar", "Kendari", "Gorontalo", "Mamuju", "Denpasar", "Mataram", "Kupang",
+    "Tarakan", "Balikpapan", "Bontang", "Singkawang", "Banjarbaru", "Baubau", "Kotamobagu",
+    "Tomohon", "Bitung", "Bima"
 ]
 
-# Urutkan dari nama terpanjang agar deteksi akurat
+# Urutkan dari nama terpanjang ke terpendek agar 'Jakarta Selatan' terdeteksi sebelum 'Jakarta'
 DATABASE_SORTED = sorted(DATABASE_KOTA, key=len, reverse=True)
 
 # =============================================================================
 # 2. FUNGSI LOAD DATA ANTI-ERROR (ROBUST LOADER)
 # =============================================================================
-# Fungsi ini mencoba 3 cara membaca file agar tidak error
 @st.cache_data
 def load_data_robust(file):
-    # Cara 1: Standard (Koma)
+    # Coba baca normal (koma)
     try:
         return pd.read_csv(file)
     except:
         pass
-    
-    # Cara 2: Format Excel Indonesia (Titik Koma)
+    # Coba baca format titik koma (Excel Indo)
     try:
         file.seek(0)
         return pd.read_csv(file, sep=';')
     except:
         pass
-    
-    # Cara 3: Paksa Baca (Skip baris error)
+    # Coba baca paksa (Python engine)
     try:
         file.seek(0)
         return pd.read_csv(file, sep=None, engine='python', on_bad_lines='skip')
@@ -101,16 +105,15 @@ def load_data_robust(file):
 # =============================================================================
 # 3. LOGIKA PEMROSESAN DATA
 # =============================================================================
-
 @st.cache_data
 def scan_data(df):
-    # Ambil kolom pertama sebagai referensi jika 'Title' tidak ada
+    # Ambil kolom pertama (biasanya Title)
     col_name = 'Title' if 'Title' in df.columns else df.columns[0]
     
-    # Pastikan data berupa text (string)
+    # Pastikan data string
     df[col_name] = df[col_name].astype(str)
     
-    # Deteksi Kota
+    # --- LOGIKA DETEKSI KOTA ---
     def get_city(text):
         t = str(text).lower()
         for kota in DATABASE_SORTED:
@@ -118,7 +121,7 @@ def scan_data(df):
                 return kota 
         return "Tidak Terdeteksi"
     
-    # Deteksi Kategori
+    # --- LOGIKA DETEKSI KATEGORI ---
     def get_category(text):
         t = str(text).lower()
         if 'masjid' in t or 'musholla' in t: return "🕌 Proyek Masjid"
@@ -135,30 +138,34 @@ def scan_data(df):
     return df
 
 # =============================================================================
-# 4. TAMPILAN APLIKASI (UI)
+# 4. TAMPILAN APLIKASI (USER INTERFACE)
 # =============================================================================
-
-st.title("Aplikasi Sortir Data Arsitek (Anti-Error)")
-st.markdown("Upload file CSV Judul Anda, sistem akan mendeteksi **Kota** secara otomatis.")
+st.title("Aplikasi Sortir Data Arsitek (Database Lengkap)")
+st.markdown("Upload file CSV Anda. Aplikasi akan membaca **seluruh baris data** dan mendeteksi lokasinya.")
 
 uploaded_file = st.file_uploader("Upload File CSV di sini", type=["csv"])
 
 if uploaded_file:
-    # --- PROSES LOAD DATA (MENGGUNAKAN FUNGSI BARU) ---
+    # Load Data dengan metode Anti-Error
     df_raw = load_data_robust(uploaded_file)
     
     if df_raw is not None:
-        with st.spinner('Sedang memindai ribuan data...'):
+        # Hitung Jumlah Baris Asli
+        total_baris = len(df_raw)
+        
+        # Tampilkan Info Jumlah Data di Awal
+        st.info(f"📂 File berhasil dibaca! Total Data ditemukan: **{total_baris} baris**.")
+        
+        with st.spinner(f'Sedang memproses deteksi kota untuk {total_baris} data...'):
             df_hasil = scan_data(df_raw)
         
-        st.success(f"✅ Berhasil memproses {len(df_hasil)} baris data!")
-        
+        st.success("✅ Deteksi Selesai!")
         st.divider()
         
-        # MENU FILTER (SIDEBAR)
-        st.sidebar.header("🎛️ Menu Pilihan")
+        # --- SIDEBAR MENU ---
+        st.sidebar.header("🎛️ Menu Filter")
         
-        # Pilihan Kota
+        # Pilihan Kota (Sortir A-Z)
         list_kota = sorted(df_hasil[df_hasil['Kota_Terdeteksi'] != "Tidak Terdeteksi"]['Kota_Terdeteksi'].unique())
         pilih_kota = st.sidebar.multiselect("📍 Pilih Kota:", list_kota)
         
@@ -166,10 +173,10 @@ if uploaded_file:
         list_kategori = sorted(df_hasil['Kategori_Jasa'].unique())
         pilih_kategori = st.sidebar.multiselect("🏷️ Pilih Kategori:", list_kategori)
         
-        # Limit Baris
-        limit = st.sidebar.number_input("🔢 Ambil Berapa Baris?", min_value=1, value=50)
+        # Limit Baris untuk Preview
+        limit = st.sidebar.number_input("🔢 Preview Berapa Baris?", min_value=1, value=50)
         
-        # LOGIKA FILTER
+        # --- PROSES FILTER ---
         df_export = df_hasil.copy()
         
         if pilih_kota:
@@ -177,24 +184,26 @@ if uploaded_file:
         if pilih_kategori:
             df_export = df_export[df_export['Kategori_Jasa'].isin(pilih_kategori)]
         
-        # Batasi jumlah baris
-        df_final = df_export.head(limit)
+        # --- TAMPILAN HASIL ---
+        st.subheader(f"📋 Hasil Filter: {len(df_export)} Data Terpilih")
         
-        # TAMPILAN HASIL
-        st.subheader(f"📋 Hasil Filter: {len(df_final)} Data")
-        st.dataframe(df_final, use_container_width=True)
-        
-        # TOMBOL DOWNLOAD
+        # Tampilkan Dataframe (Preview)
+        st.dataframe(df_export.head(limit), use_container_width=True)
+        if len(df_export) > limit:
+            st.caption(f"*Menampilkan {limit} baris pertama dari {len(df_export)} data hasil filter.*")
+
+        # --- DOWNLOAD BUTTON ---
         buffer = io.BytesIO()
         with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
-            df_final.to_excel(writer, index=False, sheet_name='Data Filter')
+            df_export.to_excel(writer, index=False, sheet_name='Hasil Filter')
             
         st.download_button(
-            label="📥 Download Hasil (Excel)",
+            label="📥 Download Semua Hasil Filter (Excel)",
             data=buffer,
-            file_name="Data_Arsitek_Pilihan.xlsx",
+            file_name="Data_Arsitek_Terfilter.xlsx",
             mime="application/vnd.ms-excel",
             type="primary"
         )
+            
     else:
-        st.error("⚠️ Gagal membaca file CSV. Pastikan format file benar atau coba save as CSV UTF-8 di Excel.")
+        st.error("⚠️ Gagal membaca file. Pastikan file CSV tidak rusak.")
