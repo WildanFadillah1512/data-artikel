@@ -3,13 +3,14 @@ import pandas as pd
 import io
 
 # --- KONFIGURASI HALAMAN ---
-st.set_page_config(page_title="Aplikasi Filter Data Arsitek (CSV Output)", layout="wide", page_icon="🏗️")
+st.set_page_config(page_title="Aplikasi Filter Data Arsitek (Final CSV)", layout="wide", page_icon="🏗️")
 
 # =============================================================================
 # 1. DATABASE KOTA (DATABASE ULTIMATE)
 # =============================================================================
+# Database ini mencakup Kota Besar, Kabupaten, hingga daerah spesifik di data Anda.
 DATABASE_KOTA = [
-    # --- DAERAH KHUSUS & UNIK ---
+    # --- DAERAH KHUSUS & UNIK (Ditemukan di pola data Anda) ---
     "Kuala Kencana", "Rengasdengklok", "Baturaden", "Rantau Prapat", "Rantauprapat",
     "Ujung Batu", "Bagan Batu", "Pasir Pengaraian", "Pangkalan Kerinci",
     "Ampana", "Woha", "Mandalika", "Cipatat", "Kroya", "Wates", "Bangil", 
@@ -75,22 +76,26 @@ DATABASE_KOTA = [
     "Tomohon", "Bitung", "Bima"
 ]
 
+# Urutkan dari nama terpanjang ke terpendek agar 'Jakarta Selatan' terdeteksi sebelum 'Jakarta'
 DATABASE_SORTED = sorted(DATABASE_KOTA, key=len, reverse=True)
 
 # =============================================================================
-# 2. FUNGSI LOAD DATA ANTI-ERROR
+# 2. FUNGSI LOAD DATA ANTI-ERROR (ROBUST LOADER)
 # =============================================================================
 @st.cache_data
 def load_data_robust(file):
+    # Coba baca normal (koma)
     try:
         return pd.read_csv(file)
     except:
         pass
+    # Coba baca format titik koma (Excel Indo)
     try:
         file.seek(0)
         return pd.read_csv(file, sep=';')
     except:
         pass
+    # Coba baca paksa (Python engine)
     try:
         file.seek(0)
         return pd.read_csv(file, sep=None, engine='python', on_bad_lines='skip')
@@ -102,9 +107,13 @@ def load_data_robust(file):
 # =============================================================================
 @st.cache_data
 def scan_data(df):
+    # Ambil kolom pertama (biasanya Title)
     col_name = 'Title' if 'Title' in df.columns else df.columns[0]
+    
+    # Pastikan data string
     df[col_name] = df[col_name].astype(str)
     
+    # --- LOGIKA DETEKSI KOTA ---
     def get_city(text):
         t = str(text).lower()
         for kota in DATABASE_SORTED:
@@ -112,6 +121,7 @@ def scan_data(df):
                 return kota 
         return "Tidak Terdeteksi"
     
+    # --- LOGIKA DETEKSI KATEGORI ---
     def get_category(text):
         t = str(text).lower()
         if 'masjid' in t or 'musholla' in t: return "🕌 Proyek Masjid"
@@ -128,7 +138,7 @@ def scan_data(df):
     return df
 
 # =============================================================================
-# 4. UI HALAMAN
+# 4. TAMPILAN APLIKASI (USER INTERFACE)
 # =============================================================================
 st.title("Aplikasi Sortir Data Arsitek (Database Lengkap)")
 st.markdown("Upload file CSV Anda. Aplikasi akan membaca **seluruh baris data** dan mendeteksi lokasinya.")
@@ -136,10 +146,14 @@ st.markdown("Upload file CSV Anda. Aplikasi akan membaca **seluruh baris data** 
 uploaded_file = st.file_uploader("Upload File CSV di sini", type=["csv"])
 
 if uploaded_file:
+    # Load Data dengan metode Anti-Error
     df_raw = load_data_robust(uploaded_file)
     
     if df_raw is not None:
+        # Hitung Jumlah Baris Asli
         total_baris = len(df_raw)
+        
+        # Tampilkan Info Jumlah Data di Awal
         st.info(f"📂 File berhasil dibaca! Total Data ditemukan: **{total_baris} baris**.")
         
         with st.spinner(f'Sedang memproses deteksi kota untuk {total_baris} data...'):
@@ -151,12 +165,15 @@ if uploaded_file:
         # --- SIDEBAR MENU ---
         st.sidebar.header("🎛️ Menu Filter")
         
+        # Pilihan Kota (Sortir A-Z)
         list_kota = sorted(df_hasil[df_hasil['Kota_Terdeteksi'] != "Tidak Terdeteksi"]['Kota_Terdeteksi'].unique())
         pilih_kota = st.sidebar.multiselect("📍 Pilih Kota:", list_kota)
         
+        # Pilihan Kategori
         list_kategori = sorted(df_hasil['Kategori_Jasa'].unique())
         pilih_kategori = st.sidebar.multiselect("🏷️ Pilih Kategori:", list_kategori)
         
+        # Limit Baris untuk Preview
         limit = st.sidebar.number_input("🔢 Preview Berapa Baris?", min_value=1, value=50)
         
         # --- PROSES FILTER ---
@@ -170,12 +187,13 @@ if uploaded_file:
         # --- TAMPILAN HASIL ---
         st.subheader(f"📋 Hasil Filter: {len(df_export)} Data Terpilih")
         
+        # Tampilkan Dataframe (Preview)
         st.dataframe(df_export.head(limit), use_container_width=True)
         if len(df_export) > limit:
             st.caption(f"*Menampilkan {limit} baris pertama dari {len(df_export)} data hasil filter.*")
 
-        # --- DOWNLOAD BUTTON (CSV) ---
-        # Konversi dataframe ke CSV string
+        # --- DOWNLOAD BUTTON (FORMAT CSV) ---
+        # Mengubah DataFrame menjadi format CSV (String)
         csv_data = df_export.to_csv(index=False).encode('utf-8')
         
         st.download_button(
