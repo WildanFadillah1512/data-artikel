@@ -133,7 +133,7 @@ def scan_data(df):
 st.title("Aplikasi Split Data Arsitek (Batch System)")
 st.markdown("""
 Aplikasi ini akan memfilter data, lalu **memecahnya menjadi beberapa bagian (batch)**.
-Anda bisa memilih batch mana yang ingin didownload secara berurutan agar data tidak terduplikasi.
+Anda bebas menentukan **jumlah baris per file**, lalu download secara berurutan.
 """)
 
 uploaded_file = st.file_uploader("Upload File CSV di sini", type=["csv"])
@@ -174,47 +174,49 @@ if uploaded_file:
         st.subheader(f"📊 Total Hasil Filter: {total_filtered} Data")
         
         if total_filtered > 0:
-            st.markdown("### ✂️ Pengaturan Pembagian Data")
+            st.markdown("### ✂️ Pengaturan Pembagian Data (Batch)")
             
-            # Input untuk menentukan berapa baris per file
-            batch_size = st.number_input("Ingin berapa baris data per file download?", min_value=1, value=50, step=10)
+            # --- INPUT USER: BERAPA ROW PER FILE ---
+            batch_size = st.number_input(
+                "Ingin berapa baris data per file download? (Contoh: 50, 100, 500)", 
+                min_value=1, 
+                value=50, 
+                step=10
+            )
             
-            # Hitung jumlah batch
+            # Hitung jumlah batch berdasarkan input user
             num_batches = math.ceil(total_filtered / batch_size)
             
-            st.info(f"Data akan dibagi menjadi **{num_batches} bagian (batch)**. Silakan download berurutan di bawah ini.")
+            st.info(f"Dengan **{batch_size} baris per file**, data akan dibagi menjadi **{num_batches} file (batch)**. Silakan download di bawah ini.")
             
             st.markdown("---")
-            st.subheader("📥 Download Area")
+            st.subheader("📥 Download Area (Urut dari Atas ke Bawah)")
             
             # Identifikasi kolom Title yang asli
             col_name_asli = 'Title' if 'Title' in df_export.columns else df_export.columns[0]
             
             # --- LOOP MEMBUAT TOMBOL DOWNLOAD ---
-            # Kita buat container agar rapi
-            cols = st.columns(1) # Bisa diganti st.columns(3) jika ingin berjejer kesamping
-            
             for i in range(num_batches):
-                # Tentukan index awal dan akhir untuk batch ini
+                # Tentukan index awal dan akhir untuk batch ini berdasarkan input user
                 start_idx = i * batch_size
                 end_idx = min((i + 1) * batch_size, total_filtered)
                 
                 # Slice data (Potong data sesuai urutan)
                 df_batch = df_export.iloc[start_idx:end_idx]
                 
-                # Hanya ambil kolom Title
+                # Hanya ambil kolom Title (Sesuai Request)
                 df_final_download = df_batch[[col_name_asli]]
                 
                 # Konversi ke CSV
                 csv_data = df_final_download.to_csv(index=False).encode('utf-8')
                 
                 # Buat nama file yang unik dan informatif
-                file_label = f"Batch {i+1} (Data baris {start_idx+1} - {end_idx})"
+                file_label = f"Batch {i+1} (Data ke-{start_idx+1} s/d {end_idx})"
                 file_name_download = f"Data_Arsitek_Batch_{i+1}_{start_idx+1}_to_{end_idx}.csv"
                 
-                # Tampilkan Tombol
+                # Tampilkan Tombol dalam Expander agar rapi
                 with st.expander(f"📦 **{file_label}** - Klik untuk buka"):
-                    st.write(f"Berisi {len(df_final_download)} data title.")
+                    st.write(f"Berisi {len(df_final_download)} baris data title.")
                     st.dataframe(df_final_download.head(3), use_container_width=True) # Preview kecil
                     st.caption("... (preview 3 data teratas)")
                     
