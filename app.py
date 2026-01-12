@@ -154,11 +154,19 @@ if uploaded_file:
         # --- SIDEBAR MENU (FILTER) ---
         st.sidebar.header("🎛️ Filter Data")
         
+        # 1. Filter Kota
         list_kota = sorted(df_hasil[df_hasil['Kota_Terdeteksi'] != "Tidak Terdeteksi"]['Kota_Terdeteksi'].unique())
         pilih_kota = st.sidebar.multiselect("📍 Pilih Kota:", list_kota)
         
+        # 2. Filter Kategori
         list_kategori = sorted(df_hasil['Kategori_Jasa'].unique())
         pilih_kategori = st.sidebar.multiselect("🏷️ Pilih Kategori:", list_kategori)
+        
+        # 3. Filter Kata Kunci 'Jasa' (FITUR BARU)
+        st.sidebar.markdown("---")
+        st.sidebar.subheader("🔍 Filter Kata Kunci")
+        filter_kata_jasa = st.sidebar.checkbox("✅ Hanya judul yang mengandung kata 'Jasa'", value=False)
+        st.sidebar.caption("Jika dicentang, data tanpa kata 'jasa' akan dibuang.")
         
         # --- PROSES FILTER ---
         df_export = df_hasil.copy()
@@ -167,6 +175,13 @@ if uploaded_file:
             df_export = df_export[df_export['Kota_Terdeteksi'].isin(pilih_kota)]
         if pilih_kategori:
             df_export = df_export[df_export['Kategori_Jasa'].isin(pilih_kategori)]
+            
+        # Logika Filter Kata 'Jasa'
+        if filter_kata_jasa:
+            # Tentukan kolom judul secara dinamis (sama seperti saat scan)
+            col_name_filter = 'Title' if 'Title' in df_export.columns else df_export.columns[0]
+            # Filter yang mengandung 'jasa' (case insensitive)
+            df_export = df_export[df_export[col_name_filter].str.contains("jasa", case=False, na=False)]
             
         total_filtered = len(df_export)
         
